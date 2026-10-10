@@ -180,7 +180,7 @@ States the page must show:
 - Python and FastAPI.
 - CORS allows `http://localhost:3000`.
 - Prompts and rubrics live in code, one module per role.
-- A thin LLM adapter reads `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL` from the environment. Any OpenAI-compatible chat endpoint can be used. The rest of the app depends only on this adapter.
+- A thin LLM adapter reads `GEMINI_API_KEY` and `GEMINI_MODEL` from the environment and calls Gemini `generateContent`. Follow-up questions and the finish rubric both go through that adapter. The rest of the app depends only on this adapter.
 
 Turn behaviour:
 
@@ -192,7 +192,7 @@ Finish behaviour:
 
 1. Ask the model for JSON that matches the rubric schema below.
 2. Store the evaluation and return it.
-3. If `LLM_API_KEY` is missing, return a clear error and do not write a fake score. The UI tells the student the coach is not configured.
+3. If `GEMINI_API_KEY` is missing, return a clear error and do not write a fake score. The UI tells the student the coach is not configured.
 
 ### Rubric JSON
 
@@ -277,7 +277,7 @@ Build only the hour MVP. Stop after step 5 and run the user test before adding P
 
 1. **Scaffold both apps.** Create `backend/` with FastAPI, a `/health` route, CORS, and the SQLite schema created on startup. Create `frontend/` with Next.js, TypeScript, and a single page shell. Confirm both processes start.
 2. **Seed the three roles.** Add the opening questions, system prompts, and rubric dimension names from section 7. `GET /roles` returns them.
-3. **Implement the session API.** `POST /sessions` writes the row and the opening interviewer message. `POST /sessions/{id}/turns` accepts exactly one student answer before the follow-up and one after it. `POST /sessions/{id}/finish` requests the rubric JSON and stores it. Missing `LLM_API_KEY` returns an error and leaves the session unfinished.
+3. **Implement the session API.** `POST /sessions` writes the row and the opening interviewer message. `POST /sessions/{id}/turns` accepts exactly one student answer before the follow-up and one after it. `POST /sessions/{id}/finish` requests the rubric JSON and stores it. Missing `GEMINI_API_KEY` returns an error and leaves the session unfinished.
 4. **Build the page.** Wire the picker, the transcript, the answer box, and the feedback panel to those endpoints. Show the saved session when a name is entered that already has one.
 5. **Run one scripted session, then the user test.** Complete one session yourself for each preset, check that the quote in the rubric appears in the transcript, then sit with one real user and ask the three questions in section 5.
 
@@ -285,7 +285,7 @@ Suggested split of the hour: step 1 about 10 minutes, step 2 about 15 minutes, s
 
 ### Local run shape
 
-- Backend: Python environment, install FastAPI and Uvicorn, run Uvicorn on port 8000. Environment file holds `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`. The environment file stays out of git.
+- Backend: Python environment, install FastAPI and Uvicorn, run Uvicorn on port 8000. Environment file holds `GEMINI_API_KEY` and `GEMINI_MODEL`. The environment file stays out of git.
 - Frontend: `npm install`, then the Next.js dev server on port 3000.
 - Database file: `backend/data/coach.db`, created automatically, also kept out of git.
 

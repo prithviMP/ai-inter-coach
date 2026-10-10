@@ -128,7 +128,7 @@ She cannot start a new interview from this screen in the MVP. The saved result i
 
 ## 4. Unhappy path — coach not configured
 
-`LLM_API_KEY` is missing when she sends her first answer.
+`GEMINI_API_KEY` is missing when she sends her first answer.
 
 | | |
 | --- | --- |

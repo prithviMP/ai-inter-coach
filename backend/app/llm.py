@@ -11,43 +11,92 @@ class CoachNotConfigured(Exception):
     """Raised when the server has no model key. Callers must not invent a score."""
 
 
+DEFAULT_MODEL = "gemini-3.8-flash"
+GENERATE_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+)
+
+
 def _api_key() -> str:
-    key = os.environ.get("LLM_API_KEY", "").strip()
+    key = os.environ.get("GEMINI_API_KEY", "").strip() or os.environ.get(
+        "GOOGLE_API_KEY", ""
+    ).strip()
     if not key:
         raise CoachNotConfigured("The coach is not configured.")
     return key
 
 
-def _base_url() -> str:
-    return os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1").strip().rstrip("/")
-
-
 def _model() -> str:
-    return os.environ.get("LLM_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+    return os.environ.get("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
 
 
-async def complete(messages: list[dict[str, str]]) -> str:
-    payload = {
-        "model": _model(),
-        "messages": messages,
-        "temperature": 0.4,
+def _gemini_body(messages: list[dict[str, str]], *, json_mode: bool) -> dict[str, Any]:
+    system_parts: list[str] = []
+    contents: list[dict[str, Any]] = []
+    for message in messages:
+        role = message["role"]
+        text = message["content"]
+        if role == "system":
+            system_parts.append(text)
+            continue
+        gemini_role = "model" if role == "assistant" else "user"
+        if contents and contents[-1]["role"] == gemini_role:
+            contents[-1]["parts"][0]["text"] += "\n\n" + text
+            continue
+        contents.append({"role": gemini_role, "parts": [{"text": text}]})
+
+    if contents and contents[0]["role"] == "model":
+        contents.insert(0, {"role": "user", "parts": [{"text": "Begin the interview."}]})
+    if not contents:
+        raise RuntimeError("The coach could not complete that turn.")
+
+    generation_config: dict[str, Any] = {"temperature": 0.2 if json_mode else 0.4}
+    if json_mode:
+        generation_config["responseMimeType"] = "application/json"
+
+    payload: dict[str, Any] = {
+        "contents": contents,
+        "generationConfig": generation_config,
     }
+    if system_parts:
+        payload["systemInstruction"] = {"parts": [{"text": "\n\n".join(system_parts)}]}
+    return payload
+
+
+def _reply_text(data: dict[str, Any]) -> str:
+    try:
+        parts = data["candidates"][0]["content"]["parts"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError("The coach returned an empty reply.") from exc
+    if not isinstance(parts, list):
+        raise RuntimeError("The coach returned an empty reply.")
+    chunks = [
+        part["text"].strip()
+        for part in parts
+        if isinstance(part, dict)
+        and isinstance(part.get("text"), str)
+        and not part.get("thought")
+        and part["text"].strip()
+    ]
+    if not chunks:
+        raise RuntimeError("The coach returned an empty reply.")
+    return "\n".join(chunks)
+
+
+async def complete(messages: list[dict[str, str]], *, json_mode: bool = False) -> str:
+    """Ask Gemini for a follow-up question, or for rubric JSON when json_mode is set."""
     async with httpx.AsyncClient(timeout=60) as client:
         response = await client.post(
-            f"{_base_url()}/chat/completions",
-            headers={"Authorization": f"Bearer {_api_key()}"},
-            json=payload,
+            GENERATE_URL.format(model=_model()),
+            headers={
+                "x-goog-api-key": _api_key(),
+                "Content-Type": "application/json",
+            },
+            json=_gemini_body(messages, json_mode=json_mode),
         )
     if response.status_code >= 400:
         raise RuntimeError("The coach could not complete that turn.")
-    data = response.json()
-    try:
-        content = data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise RuntimeError("The coach returned an empty reply.") from exc
-    if not isinstance(content, str) or not content.strip():
-        raise RuntimeError("The coach returned an empty reply.")
-    return content.strip()
+    return _reply_text(response.json())
 
 
 def follow_up_messages(role: Role, transcript: list[dict[str, str]]) -> list[dict[str, str]]:

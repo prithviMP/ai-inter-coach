@@ -229,7 +229,7 @@ async def finish_session(session_id: str) -> dict:
             raise HTTPException(status_code=400, detail="Unknown role.")
 
     try:
-        raw = await complete(rubric_messages(role, messages))
+        raw = await complete(rubric_messages(role, messages), json_mode=True)
         rubric = parse_rubric(raw, role)
     except CoachNotConfigured as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc

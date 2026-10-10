@@ -14,7 +14,7 @@ cp .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Put the model key in `backend/.env`. That file stays untracked. Without `LLM_API_KEY`, `/health` and `/roles` still work, and a turn returns “The coach is not configured.”
+Put the Gemini key in `backend/.env`. That file stays untracked. Without `GEMINI_API_KEY`, `/health` and `/roles` still work, and a turn returns “The coach is not configured.”
 
 Site, from `frontend/`:
 
@@ -31,9 +31,8 @@ The page is at `http://localhost:3000`. The browser calls `/api` on this site, a
 
 In the Render dashboard, set:
 
-- `LLM_API_KEY`
-- `LLM_BASE_URL` (an OpenAI-compatible base, such as `https://api.openai.com/v1`)
-- `LLM_MODEL`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL` (defaults to `gemini-3.8-flash`)
 - `CORS_ORIGINS` — include the Vercel origin, for example `https://your-app.vercel.app`
 
 ## Vercel (site)
