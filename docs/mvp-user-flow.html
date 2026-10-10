@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meera’s first session — user flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@450;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --board: #d7e3ee;
+      --ink: #122033;
+      --muted: #4c6278;
+      --card: #f4f8fb;
+      --white: #ffffff;
+      --line: #b7c9d8;
+      --cobalt: #1d4ed8;
+      --cobalt-soft: #dbe6ff;
+      --leaf: #0c7a48;
+      --leaf-soft: #d7f3e4;
+      --coral: #c2410c;
+      --coral-soft: #ffe4d4;
+      --amber: #a16207;
+      --amber-soft: #fdecc8;
+      --shadow: 0 10px 28px rgba(18, 32, 51, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background:
+        radial-gradient(900px 420px at 10% -10%, #f7fbff 0%, transparent 55%),
+        var(--board);
+      color: var(--ink);
+      font-family: Figtree, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    button { font-family: inherit; }
+    .progress {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: var(--cobalt); width: 0; z-index: 20;
+    }
+    .rail {
+      position: fixed; left: 18px; top: 0; bottom: 0; width: 28px;
+      display: flex; flex-direction: column; justify-content: space-evenly; align-items: center;
+      z-index: 5; pointer-events: none;
+    }
+    .rail span {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #f7fbff; box-shadow: inset 0 0 0 3px #9eb4c8;
+    }
+    .deck { height: 100%; }
+    .slide {
+      display: none; height: 100%;
+      padding: 28px 36px 84px 64px; overflow: auto;
+    }
+    .slide.active { display: flex; flex-direction: column; justify-content: center; }
+    .kicker {
+      font-family: "Bricolage Grotesque", Figtree, sans-serif;
+      font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--cobalt); font-weight: 700; margin: 0 0 8px;
+    }
+    h1, h2, h3 {
+      font-family: "Bricolage Grotesque", Figtree, sans-serif;
+      font-weight: 700; letter-spacing: -0.03em; margin: 0; line-height: 1.05;
+    }
+    h1 { font-size: clamp(2.2rem, 4.4vw, 3.6rem); }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); max-width: 22ch; }
+    .muted { color: var(--muted); margin: 0; }
+    .split { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 28px; align-items: center; }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 22px; }
+    .fact {
+      background: var(--white); border: 1px solid var(--line); border-radius: 16px;
+      padding: 14px; box-shadow: var(--shadow);
+    }
+    .fact svg { width: 22px; height: 22px; color: var(--cobalt); }
+    .fact strong { display: block; margin-top: 8px; font-size: 1.15rem; }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--cobalt); color: white;
+      display: grid; place-items: center;
+      font-family: "Bricolage Grotesque", sans-serif; font-size: 1.4rem; font-weight: 700;
+    }
+    .who { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
+    .track {
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px; margin-top: 28px; position: relative;
+    }
+    .track article {
+      background: var(--white); border: 1px solid var(--line); border-radius: 14px;
+      padding: 12px 10px; text-align: center; box-shadow: var(--shadow);
+      opacity: 0.28; transform: translateY(8px);
+    }
+    .track b {
+      display: block; color: var(--cobalt);
+      font-family: "Bricolage Grotesque", sans-serif; font-size: 1.35rem;
+    }
+    .track em { font-style: normal; font-weight: 700; display: block; margin-top: 4px; }
+    .slide.play .track article { animation: rise 0.45s ease forwards; }
+    .slide.play .track article:nth-child(1) { animation-delay: 0.05s; }
+    .slide.play .track article:nth-child(2) { animation-delay: 0.2s; }
+    .slide.play .track article:nth-child(3) { animation-delay: 0.35s; }
+    .slide.play .track article:nth-child(4) { animation-delay: 0.5s; }
+    .slide.play .track article:nth-child(5) { animation-delay: 0.65s; }
+    .slide.play .track article:nth-child(6) { animation-delay: 0.8s; }
+    .slide.play .track article:nth-child(7) { animation-delay: 0.95s; }
+    .mock {
+      background: var(--white); border: 1px solid var(--line); border-radius: 18px;
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .mock-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: #122033; color: #f4f8fb; font-size: 0.82rem;
+    }
+    .dots { display: flex; gap: 5px; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; background: #f4f8fb; opacity: 0.45; display: block; }
+    .form { padding: 16px; display: grid; gap: 10px; }
+    .field {
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #f7fbfe;
+    }
+    .field span { display: block; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+    .roles { display: flex; gap: 8px; }
+    .pill {
+      border-radius: 999px; padding: 6px 10px; font-size: 0.82rem; font-weight: 700;
+      background: #e8eef4; color: var(--muted);
+    }
+    .pill.on {
+      background: var(--leaf-soft); color: var(--leaf);
+      box-shadow: inset 0 0 0 2px var(--leaf);
+    }
+    .slide.play .pill.on { animation: pulse 1.4s ease 0.3s 2; }
+    .go {
+      justify-self: start; background: var(--cobalt); color: white; border: 0;
+      border-radius: 999px; padding: 8px 14px; font-weight: 700;
+    }
+    .bubble {
+      margin: 12px 14px; padding: 10px 12px; border-radius: 12px;
+      width: fit-content; max-width: 88%; font-size: 0.92rem;
+      opacity: 0; transform: translateY(10px);
+    }
+    .bubble.coach { background: var(--cobalt-soft); }
+    .bubble.you { background: #eef3f7; margin-left: auto; }
+    .bubble .label {
+      display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+    }
+    .slide.play .bubble { animation: rise 0.5s ease forwards; }
+    .slide.play .bubble:nth-child(2) { animation-delay: 0.15s; }
+    .slide.play .bubble:nth-child(3) { animation-delay: 0.75s; }
+    .slide.play .bubble:nth-child(4) { animation-delay: 1.4s; }
+    .rubric { padding: 12px 14px 6px; display: grid; gap: 8px; }
+    .row { display: grid; grid-template-columns: 120px 1fr auto; gap: 8px; align-items: center; font-size: 0.85rem; }
+    .bar { height: 8px; background: #e3ebf2; border-radius: 99px; overflow: hidden; }
+    .bar span {
+      display: block; height: 100%; width: var(--w); background: var(--cobalt);
+      border-radius: 99px; transform: scaleX(0); transform-origin: left;
+    }
+    .bar.warn span { background: var(--amber); }
+    .bar.good span { background: var(--leaf); }
+    .slide.play .bar span { animation: grow 0.7s ease forwards; }
+    .slide.play .row:nth-child(1) .bar span { animation-delay: 0.15s; }
+    .slide.play .row:nth-child(2) .bar span { animation-delay: 0.3s; }
+    .slide.play .row:nth-child(3) .bar span { animation-delay: 0.45s; }
+    .slide.play .row:nth-child(4) .bar span { animation-delay: 0.6s; }
+    .note { font-size: 0.85rem; color: var(--muted); padding: 4px 14px 14px; }
+    .saved {
+      display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; margin-top: 8px;
+    }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .chip {
+      background: var(--cobalt-soft); color: var(--cobalt); border-radius: 999px;
+      padding: 6px 12px; font-weight: 700; font-size: 0.85rem;
+    }
+    .same {
+      display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: center; margin-top: 22px;
+    }
+    .same .box {
+      background: var(--white); border: 1px solid var(--line); border-radius: 16px;
+      padding: 16px; text-align: center; box-shadow: var(--shadow);
+    }
+    .same svg.arrow { width: 28px; }
+    .nav {
+      position: fixed; left: 64px; right: 24px; bottom: 16px;
+      display: flex; align-items: center; gap: 12px; z-index: 20;
+    }
+    .nav button {
+      width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line);
+      background: var(--white); cursor: pointer; font-size: 1.1rem;
+    }
+    .nav button:focus-visible, .pager button:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+    .pager { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+    .pager button {
+      width: 10px; height: 10px; border-radius: 50%; border: 0; background: #8aa0b4; cursor: pointer; padding: 0;
+    }
+    .pager button[aria-current="true"] { background: var(--cobalt); transform: scale(1.25); }
+    .count { color: var(--muted); font-size: 0.85rem; min-width: 4.5rem; text-align: right; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+    @keyframes grow { to { transform: scaleX(1); } }
+    @keyframes pulse {
+      0%, 100% { transform: none; }
+      50% { transform: scale(1.06); }
+    }
+    @media (max-width: 800px) {
+      .rail { display: none; }
+      .slide { padding: 24px 16px 96px; }
+      .split, .facts, .track, .saved, .same { grid-template-columns: 1fr; }
+      .same svg.arrow { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .track article, .bubble, .bar span, .pill.on {
+        animation: none !important; opacity: 1; transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+  <div class="rail" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="deck" id="deck">
+
+    <section class="slide" aria-label="Persona">
+      <div class="split">
+        <div>
+          <p class="kicker">MVP persona</p>
+          <div class="who">
+            <div class="avatar" aria-hidden="true">MS</div>
+            <h1>Meera Shah</h1>
+          </div>
+          <p class="muted">Final-year B.Com · Bengaluru · practising alone</p>
+        </div>
+        <div class="facts">
+          <article class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 15v4M12 11v8M16 7v12"/></svg>
+            <strong>Finance analyst</strong>
+            <p class="muted">Bank campus interview</p>
+          </article>
+          <article class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+            <strong>4 days</strong>
+            <p class="muted">Until the interview</p>
+          </article>
+          <article class="fact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>
+            <strong>11:30 pm</strong>
+            <p class="muted">No senior is awake</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Journey">
+      <p class="kicker">Her first session</p>
+      <h2>Seven steps. Then she leaves.</h2>
+      <div class="track" aria-label="Session steps">
+        <article><b>1</b><em>Setup</em><span class="muted">Name, finance, bank</span></article>
+        <article><b>2</b><em>Question</em><span class="muted">Fixed figures</span></article>
+        <article><b>3</b><em>Answer</em><span class="muted">She types 10%</span></article>
+        <article><b>4</b><em>Probe</em><span class="muted">Uses her words</span></article>
+        <article><b>5</b><em>Answer</em><span class="muted">Expenses rise</span></article>
+        <article><b>6</b><em>Rubric</em><span class="muted">Quote + drill</span></article>
+        <article><b>7</b><em>Saved</em><span class="muted">Same name, next day</span></article>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Setup">
+      <div class="split">
+        <div>
+          <p class="kicker">Step 1</p>
+          <h2>She picks Finance.</h2>
+          <div class="chips">
+            <span class="chip">Meera Shah</span>
+            <span class="chip">Horizon Bank</span>
+          </div>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="mock-bar"><span>New session</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <div class="form">
+            <div class="field"><span>Name</span>Meera Shah</div>
+            <div class="roles">
+              <span class="pill">SDE</span>
+              <span class="pill">Product</span>
+              <span class="pill on">Finance</span>
+            </div>
+            <div class="field"><span>Company</span>Horizon Bank</div>
+            <button class="go" type="button" tabindex="-1">Start</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Conversation">
+      <div class="split">
+        <div>
+          <p class="kicker">Steps 2–5</p>
+          <h2>The probe uses her sentence.</h2>
+        </div>
+        <div class="mock">
+          <div class="mock-bar"><span>Finance · Horizon Bank</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <div class="bubble coach"><span class="label">Coach</span>Revenue 100, cost of goods 60, operating expenses 30. What is the operating margin, and what does it tell you?</div>
+          <div class="bubble you"><span class="label">Meera</span>Operating margin is 10%. The business keeps ten rupees of every hundred after running costs.</div>
+          <div class="bubble coach"><span class="label">Follow-up</span>You said it keeps ten rupees of every hundred. If operating expenses rose to 40, what would you tell the manager?</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Rubric">
+      <div class="split">
+        <div>
+          <p class="kicker">Step 6</p>
+          <h2>A score that quotes her.</h2>
+        </div>
+        <div class="mock">
+          <div class="mock-bar"><span>Rubric</span><span>Not a hire score</span></div>
+          <div class="rubric">
+            <div class="row"><span>Calculation</span><div class="bar good"><span style="--w:100%"></span></div><b>4/4</b></div>
+            <div class="row"><span>Concept</span><div class="bar"><span style="--w:75%"></span></div><b>3/4</b></div>
+            <div class="row"><span>Interpretation</span><div class="bar warn"><span style="--w:50%"></span></div><b>2/4</b></div>
+            <div class="row"><span>Structure</span><div class="bar"><span style="--w:75%"></span></div><b>3/4</b></div>
+          </div>
+          <p class="note">Quote: “keeps ten rupees of every hundred.”</p>
+          <p class="note"><strong>Next drill:</strong> expenses at 40. One sentence for the manager.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Next day">
+      <p class="kicker">Step 7</p>
+      <h2>Same name. Last night is still there.</h2>
+      <div class="saved">
+        <div class="mock">
+          <div class="mock-bar"><span>Find a session</span></div>
+          <div class="form">
+            <div class="field"><span>Name</span>Meera Shah</div>
+          </div>
+        </div>
+        <div class="mock">
+          <div class="mock-bar"><span>Saved · Finance</span><span>Finished</span></div>
+          <div class="form">
+            <div class="field"><span>Company</span>Horizon Bank</div>
+            <div class="field"><span>Drill</span>Expenses at 40. One sentence for the manager.</div>
+          </div>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:12px">No second interview in this MVP.</p>
+    </section>
+
+    <section class="slide" aria-label="Other roles">
+      <p class="kicker">Same screens</p>
+      <h2>SDE and Product change the question only.</h2>
+      <div class="same">
+        <div class="box"><span class="chip">SDE</span><h3 style="margin-top:10px">Talk the approach</h3><p class="muted">Two numbers, time and space</p></div>
+        <svg class="arrow" viewBox="0 0 28 24" aria-hidden="true"><path d="M2 12h20M16 5l8 7-8 7" fill="none" stroke="#1d4ed8" stroke-width="2"/></svg>
+        <div class="box" style="outline: 2px solid var(--cobalt)"><h3>One transcript</h3><p class="muted">Setup · probe · rubric · saved</p></div>
+        <svg class="arrow" viewBox="0 0 28 24" aria-hidden="true"><path d="M26 12H6M12 5L4 12l8 7" fill="none" stroke="#1d4ed8" stroke-width="2"/></svg>
+        <div class="box"><span class="chip">Product</span><h3 style="margin-top:10px">One product case</h3><p class="muted">Orders flat, restaurants joining</p></div>
+      </div>
+    </section>
+  </div>
+
+  <nav class="nav" aria-label="Slides">
+    <button type="button" id="prev" aria-label="Previous slide">←</button>
+    <div class="pager" id="pager"></div>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+    <div class="count" id="count"></div>
+  </nav>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const pager = document.getElementById("pager");
+    const progress = document.getElementById("progress");
+    const count = document.getElementById("count");
+    let index = 0;
+
+    slides.forEach((slide, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", slide.getAttribute("aria-label") || "Slide " + (i + 1));
+      button.addEventListener("click", () => show(i));
+      pager.appendChild(button);
+    });
+
+    function show(next) {
+      index = Math.max(0, Math.min(slides.length - 1, next));
+      slides.forEach((slide, i) => {
+        const on = i === index;
+        slide.classList.toggle("active", on);
+        slide.classList.remove("play");
+        if (on) {
+          slide.scrollTop = 0;
+          void slide.offsetWidth;
+          slide.classList.add("play");
+        }
+      });
+      pager.querySelectorAll("button").forEach((button, i) => {
+        if (i === index) button.setAttribute("aria-current", "true");
+        else button.removeAttribute("aria-current");
+      });
+      progress.style.width = ((index + 1) / slides.length * 100) + "%";
+      count.textContent = (index + 1) + " / " + slides.length;
+    }
+
+    document.getElementById("prev").addEventListener("click", () => show(index - 1));
+    document.getElementById("next").addEventListener("click", () => show(index + 1));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === "PageDown") { event.preventDefault(); show(index + 1); }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); show(index - 1); }
+      if (event.key === "Home") { event.preventDefault(); show(0); }
+      if (event.key === "End") { event.preventDefault(); show(slides.length - 1); }
+    });
+
+    const fromHash = Number(location.hash.replace("#", ""));
+    show(Number.isFinite(fromHash) && fromHash > 0 ? fromHash - 1 : 0);
+  </script>
+</body>
+</html>

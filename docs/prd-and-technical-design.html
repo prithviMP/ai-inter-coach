@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Interview Coach — visual brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@450;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --board: #d7e3ee;
+      --board-deep: #c5d6e6;
+      --ink: #122033;
+      --muted: #4c6278;
+      --card: #f4f8fb;
+      --white: #ffffff;
+      --line: #b7c9d8;
+      --cobalt: #1d4ed8;
+      --cobalt-soft: #dbe6ff;
+      --leaf: #0c7a48;
+      --leaf-soft: #d7f3e4;
+      --coral: #c2410c;
+      --coral-soft: #ffe4d4;
+      --amber: #a16207;
+      --amber-soft: #fdecc8;
+      --shadow: 0 10px 28px rgba(18, 32, 51, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background:
+        radial-gradient(900px 420px at 10% -10%, #f7fbff 0%, transparent 55%),
+        var(--board);
+      color: var(--ink);
+      font-family: Figtree, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    button, a { font-family: inherit; }
+    .progress {
+      position: fixed;
+      top: 0; left: 0; height: 4px;
+      background: var(--cobalt);
+      width: 0;
+      z-index: 20;
+    }
+    .rail {
+      position: fixed;
+      left: 18px;
+      top: 0;
+      bottom: 0;
+      width: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .rail span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #f7fbff;
+      box-shadow: inset 0 0 0 3px #9eb4c8;
+    }
+    .deck { height: 100%; }
+    .slide {
+      display: none;
+      height: 100%;
+      padding: 28px 36px 84px 64px;
+      overflow: auto;
+    }
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .kicker {
+      font-family: "Bricolage Grotesque", Figtree, sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cobalt);
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    h1, h2 {
+      font-family: "Bricolage Grotesque", Figtree, sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin: 0;
+      line-height: 1.05;
+    }
+    h1 { font-size: clamp(2.4rem, 5vw, 4.4rem); max-width: 16ch; }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.5rem); max-width: 22ch; }
+    .lede { color: var(--muted); margin: 10px 0 0; max-width: 46ch; }
+    .grow { flex: 1; min-height: 0; }
+    .grid-4, .grid-3, .grid-2 { display: grid; gap: 14px; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: 1.1fr 0.9fr; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 {
+      font-family: "Bricolage Grotesque", Figtree, sans-serif;
+      margin: 8px 0 4px;
+      font-size: 1.15rem;
+    }
+    .card p, .muted { color: var(--muted); margin: 0; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--cobalt-soft);
+      color: var(--cobalt);
+    }
+    .tag.bad { background: var(--coral-soft); color: var(--coral); }
+    .tag.good { background: var(--leaf-soft); color: var(--leaf); }
+    .tag.warn { background: var(--amber-soft); color: var(--amber); }
+    .icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+    }
+    .icon svg { width: 20px; height: 20px; }
+    .icon.bad { background: var(--coral-soft); color: var(--coral); }
+    .icon.good { background: var(--leaf-soft); color: var(--leaf); }
+    .icon.mid { background: var(--cobalt-soft); color: var(--cobalt); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .stamp {
+      display: inline-block;
+      border: 2px solid var(--coral);
+      color: var(--coral);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transform: rotate(-2deg);
+      margin-bottom: 16px;
+    }
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 22px;
+      margin-top: 28px;
+    }
+    .loop .node {
+      position: relative;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 12px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .loop .node:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -16px;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--cobalt);
+      border-right: 2px solid var(--cobalt);
+      transform: translateY(-50%) rotate(45deg);
+    }
+    .loop .node strong { display: block; font-size: 1.05rem; }
+    .loop .node span { color: var(--muted); font-size: 0.82rem; }
+    .loop .arrow { display: none; }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .step {
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      padding: 12px;
+      min-height: 140px;
+      position: relative;
+    }
+    .step b {
+      display: block;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 1.6rem;
+      color: var(--cobalt);
+    }
+    .step em { font-style: normal; font-weight: 700; display: block; margin: 4px 0; }
+    .mock {
+      background: var(--white);
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .mock header, .mock-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #122033;
+      color: #f4f8fb;
+      font-size: 0.82rem;
+    }
+    .dots { display: flex; gap: 5px; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; display: block; background: #f4f8fb; opacity: 0.45; }
+    .bubble {
+      margin: 12px 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      max-width: 92%;
+      font-size: 0.92rem;
+    }
+    .bubble.coach { background: var(--cobalt-soft); }
+    .bubble.you { background: #eef3f7; margin-left: auto; }
+    .who { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .rubric { padding: 8px 14px 14px; display: grid; gap: 8px; }
+    .row {
+      display: grid;
+      grid-template-columns: 110px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .bar { height: 8px; background: #e3ebf2; border-radius: 99px; overflow: hidden; }
+    .bar span { display: block; height: 100%; background: var(--cobalt); border-radius: 99px; }
+    .bar.warn span { background: var(--amber); }
+    .bar.bad span { background: var(--coral); }
+    .quote { font-size: 0.8rem; color: var(--muted); padding: 0 14px 12px; }
+    .arch {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 10px;
+      align-items: stretch;
+      margin-top: 24px;
+    }
+    .arch .box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .arch .box.stack { display: grid; gap: 10px; }
+    .arch svg.connector { width: 36px; align-self: center; }
+    .mini {
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--board);
+    }
+    .mini strong { display: block; }
+    .api {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .api div {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 8px;
+      align-items: center;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+    }
+    .verb {
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-align: center;
+      border-radius: 6px;
+      padding: 3px 0;
+      background: var(--cobalt-soft);
+      color: var(--cobalt);
+    }
+    .verb.post { background: var(--leaf-soft); color: var(--leaf); }
+    .hour {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .hour article {
+      background: var(--white);
+      border-radius: 14px;
+      border-top: 6px solid var(--cobalt);
+      padding: 12px;
+      min-height: 160px;
+    }
+    .hour article:nth-child(2) { border-top-color: #3b6fe0; }
+    .hour article:nth-child(3) { border-top-color: var(--leaf); }
+    .hour article:nth-child(4) { border-top-color: var(--amber); }
+    .hour article:nth-child(5) { border-top-color: var(--coral); }
+    .mins {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 1.7rem;
+    }
+    .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+    .phases article {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      min-height: 210px;
+    }
+    .phases ol { margin: 8px 0 0; padding-left: 1.1rem; color: var(--muted); }
+    .phases li { margin: 4px 0; }
+    .checks { display: grid; gap: 10px; margin-top: 18px; }
+    .checks li {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: center;
+      background: var(--white);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+    }
+    .tick {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--leaf-soft); color: var(--leaf);
+      display: grid; place-items: center; font-weight: 700;
+    }
+    .qs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+    .qs article {
+      background: var(--white);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 220px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .qs b {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 2.4rem;
+      color: var(--cobalt);
+      display: block;
+    }
+    .gap {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 28px;
+      align-items: center;
+      margin-top: 28px;
+    }
+    .student {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 2px dashed var(--cobalt);
+      display: grid; place-items: center;
+      text-align: center;
+      font-weight: 700;
+      box-shadow: var(--shadow);
+    }
+    .missing { display: grid; gap: 10px; }
+    .missing div {
+      background: var(--white);
+      border-left: 6px solid var(--coral);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .missing strong { display: block; }
+    .nav {
+      position: fixed;
+      left: 64px; right: 24px; bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+    }
+    .nav button {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: var(--white);
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    .nav button:focus-visible, .pager button:focus-visible {
+      outline: 3px solid var(--cobalt);
+      outline-offset: 2px;
+    }
+    .pager { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+    .pager button {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 0;
+      background: #8aa0b4;
+      cursor: pointer;
+      padding: 0;
+    }
+    .pager button[aria-current="true"] { background: var(--cobalt); transform: scale(1.25); }
+    .count { color: var(--muted); font-size: 0.85rem; min-width: 7rem; text-align: right; }
+    .title-wrap {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: center;
+      height: 100%;
+    }
+    .out { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .out span {
+      background: #f8e8e2;
+      color: #9a3412;
+      text-decoration: line-through;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .rail { display: none; }
+      .slide { padding: 24px 16px 96px; }
+      .grid-4, .grid-3, .steps, .hour, .phases, .qs, .arch, .title-wrap, .grid-2, .gap, .loop {
+        grid-template-columns: 1fr;
+      }
+      .loop .node:not(:last-child)::after {
+        right: auto;
+        left: 24px;
+        top: auto;
+        bottom: -16px;
+        transform: rotate(135deg);
+      }
+      .arch svg.connector { display: none; }
+      .title-wrap, .gap { height: auto; }
+      h1 { max-width: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+  <div class="rail" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="deck" id="deck">
+
+    <section class="slide active" aria-label="Title">
+      <div class="title-wrap">
+        <div>
+          <div class="stamp">One-hour MVP</div>
+          <p class="kicker">AI Interview Coach</p>
+          <h1>Practise. Get probed. Leave with one drill.</h1>
+          <p class="lede">A buddy that interviews you on what you just said, then shows the weak spot with your own words.</p>
+          <div class="chips">
+            <span class="tag">Next.js · 3000</span>
+            <span class="tag">FastAPI · 8000</span>
+            <span class="tag">SQLite file</span>
+          </div>
+        </div>
+        <div class="mock" aria-hidden="true">
+          <div class="mock-bar"><span>PM · food delivery</span><span class="dots"><i></i><i></i><i></i></span></div>
+          <div class="bubble coach"><span class="who">Coach</span>Orders are flat. Restaurants are joining. What do you look at in two weeks?</div>
+          <div class="bubble you"><span class="who">You</span>I'd check conversion after the restaurant list.</div>
+          <div class="bubble coach"><span class="who">Follow-up</span>Which users drop there — new customers, or people reordering?</div>
+          <div class="quote">Next drill: redraw that funnel with one number per step.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="What exists">
+      <p class="kicker">The market</p>
+      <h2>Four tools. Each stops halfway.</h2>
+      <div class="grow"></div>
+      <div class="grid-4">
+        <article class="card">
+          <div class="icon bad" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9h8M8 13h5"/><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>
+          <h3>Code banks</h3>
+          <p>LeetCode, HackerRank. The answer is graded. The explanation is not.</p>
+          <p style="margin-top:10px"><span class="tag bad">Stops at the solution</span></p>
+        </article>
+        <article class="card">
+          <div class="icon bad" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg></div>
+          <h3>Speech coaches</h3>
+          <p>Yoodli, Huru. Pace and filler words. The content can still be wrong.</p>
+          <p style="margin-top:10px"><span class="tag bad">Ignores the answer</span></p>
+        </article>
+        <article class="card">
+          <div class="icon bad" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M4 19c1-3 3-4 5-4s4 1 5 4M14 19c.4-1.6 1.4-2.6 3-3"/></svg></div>
+          <h3>Human mocks</h3>
+          <p>Exponent, Prepfully, Pramp. Real, costly, and hard to book at night.</p>
+          <p style="margin-top:10px"><span class="tag warn">~$144/yr · $130/session</span></p>
+        </article>
+        <article class="card">
+          <div class="icon bad" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 16V8l7-4 7 4v8l-7 4-7-4z"/></svg></div>
+          <h3>Generic AI</h3>
+          <p>Final Round, ChatGPT. A score or pep talk. The next chat starts from zero.</p>
+          <p style="margin-top:10px"><span class="tag bad">Forgets you</span></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Problem">
+      <p class="kicker">Problem</p>
+      <h2>Stuck while practising. No one in the room.</h2>
+      <div class="gap">
+        <div class="student">Student<br>11:30 pm</div>
+        <div class="missing">
+          <div><strong>No interviewer</strong><span class="muted">Nothing pushes on the answer they just gave.</span></div>
+          <div><strong>No evidence</strong><span class="muted">“74/100” never quotes their words.</span></div>
+          <div><strong>No next drill</strong><span class="muted">Tomorrow’s session does not remember tonight.</span></div>
+        </div>
+      </div>
+      <p class="lede">B.Com, BBA, and MBA finance sit in the same gap. Most tools are built for software roles.</p>
+    </section>
+
+    <section class="slide" aria-label="Solution">
+      <p class="kicker">Solution</p>
+      <h2>One engine. A rubric per role.</h2>
+      <div class="loop" aria-label="Coaching loop">
+        <div class="node"><strong>Assess</strong><span>Pick a role</span></div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node"><strong>Practise</strong><span>Two answers</span></div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node"><strong>Diagnose</strong><span>Quote the gap</span></div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node"><strong>Coach</strong><span>Stronger beat</span></div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node"><strong>Retry</strong><span>Same weak spot</span></div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div class="node"><strong>Measure</strong><span>Save the drill</span></div>
+      </div>
+      <div class="out" aria-label="Left out of the first build">
+        <span>voice</span><span>code editor</span><span>whiteboard</span><span>spreadsheet</span><span>group discussion</span><span>accounts</span>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Three roles">
+      <p class="kicker">Same screen · three presets</p>
+      <h2>Prove the loop on three jobs.</h2>
+      <div class="grow"></div>
+      <div class="grid-3">
+        <article class="card">
+          <span class="tag">SDE</span>
+          <h3>Talk the approach</h3>
+          <p>Two numbers in an unsorted list add up to a target. Time and space, out loud.</p>
+          <div class="chips">
+            <span class="tag">framing</span><span class="tag">approach</span><span class="tag">complexity</span><span class="tag">edges</span><span class="tag">explanation</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="tag">Product</span>
+          <h3>One product case</h3>
+          <p>Food-delivery orders are flat while restaurants join. What do you inspect in two weeks?</p>
+          <div class="chips">
+            <span class="tag">problem</span><span class="tag">user</span><span class="tag">priority</span><span class="tag">metrics</span><span class="tag">trade-offs</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="tag good">Finance</span>
+          <h3>Read the figures</h3>
+          <p>Revenue 100, cost of goods 60, operating expenses 30. Margin, and what it means.</p>
+          <div class="chips">
+            <span class="tag good">calculation</span><span class="tag good">concept</span><span class="tag good">interpretation</span><span class="tag good">structure</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Session">
+      <p class="kicker">Ten-minute session</p>
+      <h2>Two answers. Then the rubric.</h2>
+      <div class="steps">
+        <div class="step"><b>1</b><em>Setup</em><span class="muted">Name, role, company</span></div>
+        <div class="step"><b>2</b><em>Question</em><span class="muted">Fixed per role</span></div>
+        <div class="step"><b>3</b><em>Answer</em><span class="muted">Typed, saved</span></div>
+        <div class="step"><b>4</b><em>Probe</em><span class="muted">About that answer</span></div>
+        <div class="step"><b>5</b><em>Answer</em><span class="muted">Second turn</span></div>
+        <div class="step"><b>6</b><em>Rubric</em><span class="muted">Quote + next drill</span></div>
+      </div>
+      <p class="lede">The opening question stays fixed so two students can be compared. Only the follow-up changes.</p>
+    </section>
+
+    <section class="slide" aria-label="Feedback">
+      <p class="kicker">What “good feedback” looks like</p>
+      <h2>A score that shows the sentence.</h2>
+      <div class="grow"></div>
+      <div class="grid-2">
+        <div class="mock">
+          <div class="mock-bar"><span>Rubric · not a hire score</span><span>2 / 4</span></div>
+          <div class="rubric">
+            <div class="row"><span>User</span><div class="bar"><span style="width:75%"></span></div><b>3/4</b></div>
+            <div class="row"><span>Metrics</span><div class="bar warn"><span style="width:50%"></span></div><b>2/4</b></div>
+            <div class="row"><span>Trade-offs</span><div class="bar bad"><span style="width:25%"></span></div><b>1/4</b></div>
+            <div class="row"><span>Structure</span><div class="bar"><span style="width:75%"></span></div><b>3/4</b></div>
+          </div>
+          <div class="quote">Quote: “I'd check conversion after the restaurant list.”</div>
+          <div class="quote">Missing: who drops off. Stronger: split new customers from reorders.</div>
+          <div class="quote"><strong>Next drill:</strong> one funnel, one number per step.</div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:12px">
+            <h3>Each row has four parts</h3>
+            <p>Name · score · a quote from the transcript · what was missing · one stronger beat.</p>
+          </div>
+          <div class="card">
+            <h3>The summary stays humble</h3>
+            <p>Proficiency on this rubric. No prediction that they will be hired.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Architecture">
+      <p class="kicker">Technical design</p>
+      <h2>The browser never calls the model.</h2>
+      <div class="arch">
+        <div class="box">
+          <span class="tag">Frontend</span>
+          <h3>Next.js</h3>
+          <p>One page. Picker, transcript, answer box, rubric.</p>
+          <p class="muted" style="margin-top:8px">localhost:3000</p>
+        </div>
+        <svg class="connector" viewBox="0 0 36 24" aria-hidden="true"><path d="M2 12h28M22 4l10 8-10 8" fill="none" stroke="#1d4ed8" stroke-width="2"/></svg>
+        <div class="box">
+          <span class="tag">Backend</span>
+          <h3>FastAPI</h3>
+          <p>Sessions, turns, finish. Prompts live in code.</p>
+          <p class="muted" style="margin-top:8px">localhost:8000</p>
+        </div>
+        <svg class="connector" viewBox="0 0 36 24" aria-hidden="true"><path d="M2 12h28M22 4l10 8-10 8" fill="none" stroke="#1d4ed8" stroke-width="2"/></svg>
+        <div class="box stack">
+          <div class="mini"><strong>SQLite</strong><span class="muted">backend/data/coach.db</span></div>
+          <div class="mini"><strong>LLM adapter</strong><span class="muted">Key stays on the server</span></div>
+        </div>
+      </div>
+      <p class="lede">Missing <code>LLM_API_KEY</code> returns an error. The page says the coach is not configured. No fake score.</p>
+    </section>
+
+    <section class="slide" aria-label="Data and API">
+      <p class="kicker">What gets stored</p>
+      <h2>Three tables. Seven routes.</h2>
+      <div class="grow"></div>
+      <div class="grid-2">
+        <div class="grid-3" style="grid-template-columns: 1fr;">
+          <article class="card"><span class="tag">sessions</span><h3>Who and which role</h3><p>id · name · role · company · active or finished</p></article>
+          <article class="card"><span class="tag">messages</span><h3>The transcript</h3><p>interviewer or student · the words · time</p></article>
+          <article class="card"><span class="tag good">evaluations</span><h3>The rubric</h3><p>JSON · summary · next drill</p></article>
+        </div>
+        <div class="api">
+          <div><span class="verb">GET</span><span>/roles</span></div>
+          <div><span class="verb post">POST</span><span>/sessions</span></div>
+          <div><span class="verb post">POST</span><span>/sessions/{id}/turns</span></div>
+          <div><span class="verb post">POST</span><span>/sessions/{id}/finish</span></div>
+          <div><span class="verb">GET</span><span>/sessions/{id}</span></div>
+          <div><span class="verb">GET</span><span>/sessions?name=</span></div>
+          <div><span class="verb">GET</span><span>/health</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Build plan">
+      <p class="kicker">Build this hour</p>
+      <h2>Five steps. Then stop and test.</h2>
+      <div class="hour">
+        <article><div class="mins">10m</div><strong>Scaffold</strong><p class="muted">FastAPI, SQLite, health. Next.js shell.</p></article>
+        <article><div class="mins">15m</div><strong>Three roles</strong><p class="muted">Questions, prompts, rubric names.</p></article>
+        <article><div class="mins">15m</div><strong>Session API</strong><p class="muted">Create, one follow-up, finish.</p></article>
+        <article><div class="mins">15m</div><strong>One page</strong><p class="muted">Wire the screen to those routes.</p></article>
+        <article><div class="mins">rest</div><strong>Real user</strong><p class="muted">One session each preset, then the test.</p></article>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="User test">
+      <p class="kicker">Sit with one student</p>
+      <h2>Three questions. Write the answers.</h2>
+      <div class="qs">
+        <article><b>1</b><h3>Was the follow-up about what you said?</h3><p class="muted">Or could it have been asked of anyone?</p></article>
+        <article><b>2</b><h3>Was a quote actually yours?</h3><p class="muted">It has to appear in the transcript.</p></article>
+        <article><b>3</b><h3>Would you do the next drill?</h3><p class="muted">Before the real interview.</p></article>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Later">
+      <p class="kicker">Only after someone uses it</p>
+      <h2>Four phases. One at a time.</h2>
+      <div class="phases">
+        <article><span class="tag">Now</span><h3>Text loop</h3><ol><li>Role picker</li><li>Two turns</li><li>Saved rubric</li></ol></article>
+        <article><span class="tag">Next</span><h3>Richer tasks</h3><ol><li>Voice</li><li>Code runner</li><li>Case or sheet</li><li>Retry the weak row</li></ol></article>
+        <article><span class="tag warn">Then</span><h3>Memory</h3><ol><li>Weakness record</li><li>Next session opens there</li><li>Daily drill</li></ol></article>
+        <article><span class="tag good">Later</span><h3>More roles</h3><ol><li>Resume or JD</li><li>Marketing, HR, PM cases</li><li>Group discussion</li></ol></article>
+      </div>
+    </section>
+
+    <section class="slide" aria-label="Done when">
+      <p class="kicker">The hour worked if</p>
+      <h2>A stranger finishes and points at a drill.</h2>
+      <ul class="checks">
+        <li><span class="tick">1</span><span>They reach the rubric without help.</span></li>
+        <li><span class="tick">2</span><span>The follow-up names something from their first answer.</span></li>
+        <li><span class="tick">3</span><span>At least one quote is a real span from the transcript.</span></li>
+        <li><span class="tick">4</span><span>They can say what the next drill asks them to practise.</span></li>
+        <li><span class="tick">5</span><span>The same name still finds the session after a refresh.</span></li>
+      </ul>
+      <p class="lede">If the probe is generic, or the quotes are invented, fix the prompts before adding a feature.</p>
+    </section>
+  </div>
+
+  <nav class="nav" aria-label="Slides">
+    <button type="button" id="prev" aria-label="Previous slide">←</button>
+    <div class="pager" id="pager"></div>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+    <div class="count" id="count"></div>
+  </nav>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const pager = document.getElementById("pager");
+    const progress = document.getElementById("progress");
+    const count = document.getElementById("count");
+    let index = 0;
+
+    slides.forEach((slide, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", slide.getAttribute("aria-label") || "Slide " + (i + 1));
+      button.addEventListener("click", () => show(i));
+      pager.appendChild(button);
+    });
+
+    function show(next) {
+      index = Math.max(0, Math.min(slides.length - 1, next));
+      slides.forEach((slide, i) => {
+        const on = i === index;
+        slide.classList.toggle("active", on);
+        if (on) slide.scrollTop = 0;
+      });
+      pager.querySelectorAll("button").forEach((button, i) => {
+        if (i === index) button.setAttribute("aria-current", "true");
+        else button.removeAttribute("aria-current");
+      });
+      progress.style.width = ((index + 1) / slides.length * 100) + "%";
+      count.textContent = (index + 1) + " / " + slides.length;
+    }
+
+    document.getElementById("prev").addEventListener("click", () => show(index - 1));
+    document.getElementById("next").addEventListener("click", () => show(index + 1));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === "PageDown") { event.preventDefault(); show(index + 1); }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") { event.preventDefault(); show(index - 1); }
+      if (event.key === "Home") { event.preventDefault(); show(0); }
+      if (event.key === "End") { event.preventDefault(); show(slides.length - 1); }
+    });
+    const fromHash = Number(location.hash.replace("#", ""));
+    show(Number.isFinite(fromHash) && fromHash > 0 ? fromHash - 1 : 0);
+    window.addEventListener("hashchange", () => {
+      const next = Number(location.hash.replace("#", ""));
+      if (Number.isFinite(next) && next > 0) show(next - 1);
+    });
+  </script>
+</body>
+</html>
