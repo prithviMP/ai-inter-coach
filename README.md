@@ -23,7 +23,7 @@ npm install
 npm run dev
 ```
 
-The page is at `http://localhost:3000`. `NEXT_PUBLIC_API_URL` defaults to `http://localhost:8000` in `frontend/.env.example`.
+The page is at `http://localhost:3000`. The browser calls `/api` on this site, and the server forwards those calls using `BACKEND_URL`. `frontend/.env.example` sets that to `http://localhost:8000`. Without the file, local development uses the same address.
 
 ## Render (API)
 
@@ -38,4 +38,4 @@ In the Render dashboard, set:
 
 ## Vercel (site)
 
-Create the project from this repo and set the root directory to `frontend`. Set `NEXT_PUBLIC_API_URL` to the Render URL, including `https://`.
+Create the project from this repo and set the root directory to `frontend`. Set `BACKEND_URL` to the Render URL, including `https://`, with no slash at the end.

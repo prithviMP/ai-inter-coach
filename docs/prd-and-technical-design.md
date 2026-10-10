@@ -164,7 +164,7 @@ The browser never calls the model. The API key stays on the server.
 - Next.js with the App Router and TypeScript.
 - One page. It contains the role picker, the transcript, the answer box, and the feedback panel.
 - The page calls the API with `fetch`.
-- `NEXT_PUBLIC_API_URL` defaults to `http://localhost:8000`.
+- The browser calls this site at `/api`. The server forwards those calls with `BACKEND_URL`, which defaults to `http://localhost:8000`.
 
 States the page must show:
 

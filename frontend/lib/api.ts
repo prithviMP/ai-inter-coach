@@ -6,7 +6,7 @@ import type {
   SessionListItem,
 } from "@/lib/types";
 
-const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const base = "/api";
 
 export class ApiError extends Error {
   status: number;
